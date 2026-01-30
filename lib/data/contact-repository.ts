@@ -1,116 +1,122 @@
 /**
  * CAPA DE ACCESO A DATOS (Data Access Layer)
- * Maneja la persistencia de datos usando SQLite
+ * Simula una base de datos en memoria para demostración
+ * En producción, se reemplazaría por conexión a SQLite, PostgreSQL, etc.
  */
 
-import { Contact } from '@/lib/types/contact'
-import db from './database'
+import { Contact } from "@/lib/types/contact";
 
-interface ContactRow {
-  id: string
-  nombre: string
-  email: string
-  telefono: number
-  ciudad: string
-  notas: string | null
-  created_at: string
+// Simulación de base de datos en memoria
+const contactsDB = new Map<string, Contact>();
+
+// Datos de ejemplo iniciales
+const sampleContacts: Omit<Contact, "id" | "createdAt">[] = [
+  {
+    nombre: "Juan Pérez",
+    email: "juan.perez@email.com",
+    telefono: 3001234567,
+    ciudad: "Bogotá",
+    notas: "Cliente preferencial",
+  },
+  {
+    nombre: "María García",
+    email: "maria.garcia@email.com",
+    telefono: 3109876543,
+    ciudad: "Medellín",
+    notas: undefined,
+  },
+  {
+    nombre: "Carlos López",
+    email: "carlos.lopez@email.com",
+    telefono: 3205551234,
+    ciudad: "Cali",
+    notas: "Contacto de ventas",
+  },
+];
+
+// Inicializar con datos de ejemplo
+function initializeDB() {
+  if (contactsDB.size === 0) {
+    sampleContacts.forEach((contact) => {
+      const id = crypto.randomUUID();
+      contactsDB.set(id, {
+        id,
+        ...contact,
+        createdAt: new Date().toISOString(),
+      });
+    });
+  }
 }
+
+// Inicializar al cargar el módulo
+initializeDB();
 
 export class ContactRepository {
   /**
    * Obtener todos los contactos
    */
   static getAll(): Contact[] {
-    const rows = db.prepare(`
-      SELECT id, nombre, email, telefono, ciudad, notas, created_at 
-      FROM contacts 
-      ORDER BY created_at DESC
-    `).all() as ContactRow[]
-
-    return rows.map(this.mapRowToContact)
+    initializeDB();
+    return Array.from(contactsDB.values()).sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   /**
    * Obtener un contacto por ID
    */
   static getById(id: string): Contact | undefined {
-    const row = db.prepare(`
-      SELECT id, nombre, email, telefono, ciudad, notas, created_at 
-      FROM contacts 
-      WHERE id = ?
-    `).get(id) as ContactRow | undefined
-
-    return row ? this.mapRowToContact(row) : undefined
+    return contactsDB.get(id);
   }
 
   /**
    * Buscar contactos por término
    */
   static search(term: string): Contact[] {
-    const searchTerm = `%${term}%`
-    const rows = db.prepare(`
-      SELECT id, nombre, email, telefono, ciudad, notas, created_at 
-      FROM contacts 
-      WHERE nombre LIKE ? OR email LIKE ? OR ciudad LIKE ?
-      ORDER BY created_at DESC
-    `).all(searchTerm, searchTerm, searchTerm) as ContactRow[]
-
-    return rows.map(this.mapRowToContact)
+    const searchTerm = term.toLowerCase();
+    return this.getAll().filter(
+      (contact) =>
+        contact.nombre.toLowerCase().includes(searchTerm) ||
+        contact.email.toLowerCase().includes(searchTerm) ||
+        contact.ciudad.toLowerCase().includes(searchTerm)
+    );
   }
 
   /**
    * Crear un nuevo contacto
    */
-  static create(data: Omit<Contact, 'id' | 'createdAt'>): Contact {
-    const id = crypto.randomUUID()
-    const createdAt = new Date().toISOString()
-
-    db.prepare(`
-      INSERT INTO contacts (id, nombre, email, telefono, ciudad, notas, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, data.nombre, data.email, data.telefono, data.ciudad, data.notas || null, createdAt)
-
-    return {
+  static create(data: Omit<Contact, "id" | "createdAt">): Contact {
+    const id = crypto.randomUUID();
+    const contact: Contact = {
       id,
       ...data,
-      createdAt
-    }
+      createdAt: new Date().toISOString(),
+    };
+    contactsDB.set(id, contact);
+    return contact;
   }
 
   /**
    * Eliminar un contacto
    */
   static delete(id: string): boolean {
-    const result = db.prepare('DELETE FROM contacts WHERE id = ?').run(id)
-    return result.changes > 0
+    return contactsDB.delete(id);
   }
 
   /**
    * Verificar si existe un email
    */
   static emailExists(email: string, excludeId?: string): boolean {
-    const query = excludeId
-      ? 'SELECT COUNT(*) as count FROM contacts WHERE LOWER(email) = LOWER(?) AND id != ?'
-      : 'SELECT COUNT(*) as count FROM contacts WHERE LOWER(email) = LOWER(?)'
-    
-    const params = excludeId ? [email, excludeId] : [email]
-    const result = db.prepare(query).get(...params) as { count: number }
-    
-    return result.count > 0
-  }
-
-  /**
-   * Mapear fila de BD a objeto Contact
-   */
-  private static mapRowToContact(row: ContactRow): Contact {
-    return {
-      id: row.id,
-      nombre: row.nombre,
-      email: row.email,
-      telefono: row.telefono,
-      ciudad: row.ciudad,
-      notas: row.notas || undefined,
-      createdAt: row.created_at
+    const normalizedEmail = email.toLowerCase();
+    for (const contact of contactsDB.values()) {
+      if (
+        contact.email.toLowerCase() === normalizedEmail &&
+        contact.id !== excludeId
+      ) {
+        return true;
+      }
     }
+    return false;
   }
 }

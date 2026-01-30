@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ContactService } from '@/lib/business/contact-service'
 import { ContactFormData } from '@/lib/types/contact'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 // GET - Consultar contactos
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams

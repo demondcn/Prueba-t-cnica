@@ -85,7 +85,7 @@ export default function HomePage() {
               </h1>
               <p className="text-muted-foreground flex items-center gap-2 mt-1">
                 <Sparkles className="h-4 w-4 text-primary animate-float" />
-                Arquitectura de tres capas con base de datos SQLite
+                Arquitectura de tres capas con almacenamiento en memoria
               </p>
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary border border-primary/20 hover-lift cursor-default">
             <Zap className="h-4 w-4" />
-            SQLite integrado
+            Base de datos simulada
           </div>
           <div className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary border border-primary/20 hover-lift cursor-default">
             <Layers className="h-4 w-4" />
@@ -133,7 +133,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 transition-colors hover:bg-muted">
                   <div className="h-2 w-2 rounded-full bg-primary" />
                   <code className="text-xs font-mono">/lib/data</code>
-                  <span className="text-xs text-muted-foreground ml-auto">SQLite</span>
+                  <span className="text-xs text-muted-foreground ml-auto">Datos</span>
                 </div>
               </div>
             </div>
